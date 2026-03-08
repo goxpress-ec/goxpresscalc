@@ -668,7 +668,8 @@
     <!-- Botón flotante para modo oscuro (solo emoji) -->
     <div class="dark-toggle" id="darkModeToggle">🌙</div>
 
-    <a class="whatsapp-float" href="https://wa.me/593985562172?text=Hola%20GOXPRESS%2C%20necesito%20ayuda%20con%20un%20pedido" target="_blank">
+    <!-- Botón WhatsApp flotante actualizado al número del administrador (soporte) -->
+    <a class="whatsapp-float" href="https://wa.me/593994710370?text=Hola%20GOXPRESS%2C%20necesito%20ayuda%20con%20un%20pedido" target="_blank">
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp"> Soporte
     </a>
     <div class="container">
@@ -814,6 +815,7 @@
             const TARIFA_BASE = 2.0;
             const KM_LIMITE = 4;
             const ADICIONAL_POR_KM = 0.25;
+            const ADMIN_WHATSAPP = '593994710370'; // Número del administrador (también para soporte)
 
             let ordersByLocal = {};
             let historialPedidos = [];
@@ -956,8 +958,28 @@
                 } catch (e) { console.log('Audio no soportado'); }
             }
 
-            // ========== COMPROBANTE SIN QR ==========
+            // ========== NUEVO: ENVIO DE NOTIFICACIÓN WHATSAPP AL ADMIN ==========
+            function sendAdminNotification(data) {
+                const message = `🛵 *Nuevo Pedido GOXPRESS* 🛵
+📍 *Local:* ${data.local}
+🧾 *Pedido #:* ${data.orderCount}
+👤 *Cliente:* ${data.nombre} 📞 ${data.telefono}
+📏 *Distancia:* ${data.distance.toFixed(2)} km
+💰 *Valor pedido:* $${data.valorPedido.toFixed(2)}
+💳 *Pago:* ${data.metodoPago}
+🚚 *Total envío:* $${data.final.toFixed(2)}
+
+✅ Tu pedido ha sido enviado correctamente.
+⏱️ Tiempo estimado de llegada al local: 5 a 10 minutos. Considera posibles retrasos.`;
+                const url = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            }
+
+            // ========== COMPROBANTE SIN QR (MODIFICADO PARA ENVIAR WHATSAPP) ==========
             function descargarComprobanteComoImagen(calc) {
+                // Enviar notificación al administrador inmediatamente
+                sendAdminNotification(calc);
+
                 mostrarFlotanteGenerando(true);
                 const local = calc.local || currentLocal;
                 const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'full', timeStyle: 'short' });
