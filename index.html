@@ -270,6 +270,14 @@
             min-width: 120px;
             color: var(--text-color);
         }
+        /* Nuevo: quién paga el envío */
+        .paga-envio-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
         .button-row {
             display: flex;
             flex-wrap: wrap;
@@ -668,9 +676,8 @@
     <!-- Botón flotante para modo oscuro (solo emoji) -->
     <div class="dark-toggle" id="darkModeToggle">🌙</div>
 
-    <!-- Botón WhatsApp flotante actualizado al número del administrador (soporte) -->
-   <!-- Botón WhatsApp flotante (soporte) -->
-<a class="whatsapp-float" href="https://wa.me/593994710370?text=Hola%20GOXPRESS%2C%20necesito%20ayuda%20con%20un%20pedido" target="_blank" id="soporte-btn" title="Soporte GOXPRESS">💬</a>
+    <!-- Botón WhatsApp flotante (soporte) -->
+    <a class="whatsapp-float" href="https://wa.me/593994710370?text=Hola%20GOXPRESS%2C%20necesito%20ayuda%20con%20un%20pedido" target="_blank" id="soporte-btn" title="Soporte GOXPRESS">💬</a>
     
     <div class="container">
         <div class="logo-center">
@@ -754,7 +761,7 @@
             </div>
             <datalist id="nombres-suggest"></datalist>
 
-            <!-- Contenedor: Método de pago y valor del pedido -->
+            <!-- Contenedor: Método de pago, valor del pedido y quién paga el envío -->
             <div class="pago-container">
                 <span class="pago-label">💳 Pago:</span>
                 <div class="radio-group">
@@ -764,6 +771,14 @@
                 <div class="valor-pedido-container">
                     <span>💰 Valor pedido:</span>
                     <input type="number" id="valorPedido" step="0.01" min="0" placeholder="0.00" value="0.00">
+                </div>
+                <!-- Nuevo: quién paga el envío -->
+                <div class="paga-envio-container">
+                    <span class="pago-label">🚚 Envío paga:</span>
+                    <div class="radio-group">
+                        <label><input type="radio" name="pagaEnvio" value="Cliente" checked> Cliente</label>
+                        <label><input type="radio" name="pagaEnvio" value="Local"> Local</label>
+                    </div>
                 </div>
             </div>
 
@@ -846,6 +861,8 @@
             const historialLista = document.getElementById('historialLista');
             const nombresSuggest = document.getElementById('nombres-suggest');
             const darkModeToggle = document.getElementById('darkModeToggle');
+            // Nuevo: radio de quién paga el envío
+            const radioPagaCliente = document.querySelector('input[name="pagaEnvio"][value="Cliente"]');
 
             // ========== FUNCIÓN PARA APLICAR TEMA ==========
             function applyTheme() {
@@ -960,15 +977,17 @@
 
             // ========== NUEVO: ENVIO DE NOTIFICACIÓN WHATSAPP AL ADMIN ==========
             function sendAdminNotification(data) {
+                const totalGeneral = data.valorPedido + data.final;
                 const message = `🛵 *Nuevo Pedido GOXPRESS* 🛵
 📍 *Local:* ${data.local}
 🧾 *Pedido #:* ${data.orderCount}
 👤 *Cliente:* ${data.nombre} 📞 ${data.telefono}
 📏 *Distancia:* ${data.distance.toFixed(2)} km
 💰 *Valor pedido:* $${data.valorPedido.toFixed(2)}
-💳 *Pago:* ${data.metodoPago}
-🚚 *Total envío:* $${data.final.toFixed(2)}
-
+💳 *Método pago:* ${data.metodoPago}
+🚚 *Costo envío:* $${data.final.toFixed(2)}
+💵 *Total general (pedido+envío):* $${totalGeneral.toFixed(2)}
+👥 *El envío lo paga:* ${data.pagaEnvio}
 ✅ Tu pedido ha sido enviado correctamente.
 ⏱️ Tiempo estimado de llegada al local: 5 a 10 minutos. Considera posibles retrasos.`;
                 const url = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`;
@@ -988,6 +1007,8 @@
                 const valorPedido = calc.valorPedido || 0;
                 const nombre = calc.nombre || '';
                 const telefono = calc.telefono || '';
+                const pagaEnvio = calc.pagaEnvio || 'Cliente';
+                const totalGeneral = valorPedido + calc.final;
 
                 comprobanteDiv.innerHTML = `
                     <div class="header">
@@ -1009,7 +1030,9 @@
                         <div class="fila"><span>Valor pedido:</span>$${valorPedido.toFixed(2)}</div>
                         <div class="fila"><span>Subtotal envío:</span>$${calc.subtotal.toFixed(2)}</div>
                         <div class="fila"><span>Descuento (${calc.discountPercent}%):</span>-$${(calc.subtotal - calc.final).toFixed(2)}</div>
-                        <div class="fila total"><span>TOTAL ENVÍO:</span>$${calc.final.toFixed(2)}</div>
+                        <div class="fila"><span>Costo envío final:</span>$${calc.final.toFixed(2)}</div>
+                        <div class="fila total"><span>TOTAL GENERAL (pedido+envío):</span>$${totalGeneral.toFixed(2)}</div>
+                        <div class="fila"><span>El envío lo paga:</span>${pagaEnvio}</div>
                     </div>
                     <div class="gracias">¡Gracias por confiar en GOXPRESS!</div>
                 `;
@@ -1054,7 +1077,7 @@
                     historialLista.innerHTML = '<div>No hay pedidos para este local.</div>';
                 } else {
                     historialLista.innerHTML = pedidosFiltrados.slice(-10).reverse().map(p => {
-                        return `<div class="historial-item" data-nombre="${p.nombre}" data-telefono="${p.telefono}" data-distancia="${p.distancia}" data-valor="${p.valorPedido}" data-metodo="${p.metodoPago}">
+                        return `<div class="historial-item" data-nombre="${p.nombre}" data-telefono="${p.telefono}" data-distancia="${p.distancia}" data-valor="${p.valorPedido}" data-metodo="${p.metodoPago}" data-pagaenvio="${p.pagaEnvio}">
                             <span>${p.fecha.slice(0,10)} - ${p.nombre}</span>
                             <span>$${p.final}</span>
                         </div>`;
@@ -1067,6 +1090,13 @@
                             valorPedidoInput.value = item.dataset.valor || '0.00';
                             if (item.dataset.metodo === 'Efectivo') radioEfectivo.checked = true;
                             else document.querySelector('input[name="metodoPago"][value="Transferencia"]').checked = true;
+                            // Restaurar quién paga el envío
+                            const pagaEnvio = item.dataset.pagaenvio || 'Cliente';
+                            if (pagaEnvio === 'Cliente') {
+                                document.querySelector('input[name="pagaEnvio"][value="Cliente"]').checked = true;
+                            } else {
+                                document.querySelector('input[name="pagaEnvio"][value="Local"]').checked = true;
+                            }
                         });
                     });
                 }
@@ -1118,6 +1148,7 @@
 
                 const metodoPago = document.querySelector('input[name="metodoPago"]:checked').value;
                 const valorPedido = parseFloat(valorPedidoInput.value) || 0;
+                const pagaEnvio = document.querySelector('input[name="pagaEnvio"]:checked').value;
 
                 ordersByLocal[currentLocal] = (ordersByLocal[currentLocal] || 0) + 1;
                 const nuevoNumero = ordersByLocal[currentLocal];
@@ -1135,6 +1166,7 @@
                     final: res.final,
                     metodoPago,
                     valorPedido,
+                    pagaEnvio, // Guardar quién paga
                     orderCount: nuevoNumero
                 };
                 historialPedidos.push(pedidoHist);
@@ -1154,7 +1186,8 @@
                     metodoPago,
                     valorPedido,
                     nombre,
-                    telefono
+                    telefono,
+                    pagaEnvio
                 };
                 descargarComprobanteComoImagen(datosComprobante);
                 actualizarContadorUI();
@@ -1169,6 +1202,7 @@
                 clienteNombre.value = '';
                 clienteTelefono.value = '';
                 radioEfectivo.checked = true;
+                radioPagaCliente.checked = true; // Por defecto cliente paga
                 resultadoBox.style.display = 'none';
                 pendingCalculation = null;
                 btnConfirmar.disabled = true;
@@ -1192,8 +1226,4 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
-
 </html>
-
-
-
